@@ -14,8 +14,11 @@ load_dotenv()
 def escalate_to_human(
     question: Annotated[str, "Вопрос клиента, на который регламент не даёт ответа"],
 ) -> str:
-    """Передаёт вопрос оператору. Используй, когда ответа нет в регламенте
-    или нужны данные конкретного заказа. Если ответ известен из регламента, не вызывай этот инструмент."""
+    """Считает, сколько дней прошло с получения товара, по двум КАЛЕНДАРНЫМ ДАТАМ.
+    Вызывай только если клиент назвал дату получения (например «20 октября»).
+    Если клиент сам назвал число дней («на 16-й день», «через неделю») — инструмент НЕ нужен,
+    просто сравни с 14 днями.
+    Если даты нет вообще — спроси её у клиента, не вызывай инструмент с пустыми значениями."""
     with open("escalations.log", "a", encoding="utf-8") as f:
         f.write(f"{datetime.now():%Y-%m-%d %H:%M} | {question}\n")
     return "Вопрос передан оператору, он ответит в рабочее время."
@@ -71,8 +74,7 @@ agent = Agent(
 
 
 def ask(question: str) -> str:
-    result = agent.run(messages=[ChatMessage.from_user(question)])
-    print(result["tool_call_counts"])
+    result = agent.run(messages=[ChatMessage.from_user(question)], today=date.today().isoformat())
     return result["last_message"].text
 
 
